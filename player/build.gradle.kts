@@ -54,12 +54,12 @@ kotlin {
         }
 
         androidMain.dependencies {
-            implementation("androidx.media3:media3-ui:1.8.0")
-            implementation("androidx.media3:media3-exoplayer:1.8.0")
-            implementation("androidx.media3:media3-datasource:1.8.0")
-            implementation("androidx.media3:media3-database:1.8.0")
-            implementation("androidx.media3:media3-exoplayer-hls:1.8.0")
-            implementation("androidx.media3:media3-exoplayer-dash:1.8.0")
+            implementation(libs.androidx.media3.ui)
+            implementation(libs.androidx.media3.exoplayer)
+            implementation(libs.androidx.media3.datasource)
+            implementation(libs.androidx.media3.database)
+            implementation(libs.androidx.media3.exoplayer.hls)
+            implementation(libs.androidx.media3.exoplayer.dash)
         }
 
         getByName("androidDeviceTest").dependencies {
@@ -76,7 +76,7 @@ kotlin {
 mavenPublishing {
     publishToMavenCentral()
 
-//    signAllPublications()
+    signAllPublications()
 
     coordinates(
         groupId = "com.biggates",
@@ -85,8 +85,8 @@ mavenPublishing {
     )
 
     pom {
-        name = "Device Manager (Kotlin Multiplatform)"
-        description = "Device Info Manager"
+        name = "Media Player (Kotlin Multiplatform)"
+        description = "Media Player"
         inceptionYear = "2025"
         url = "https://github.com/big-gates/mediaplayer-kmp"
 
@@ -109,8 +109,8 @@ mavenPublishing {
 
         scm {
             url = "https://github.com/big-gates/mediaplayer-kmp"
-            connection = "scm:git:https://github.com/big-gates/mediaplayer.git"
-            developerConnection = "scm:git:ssh://git@github.com/big-gates/mediaplayer.git"
+            connection = "scm:git:https://github.com/big-gates/mediaplayer-kmp.git"
+            developerConnection = "scm:git:ssh://git@github.com/big-gates/mediaplayer-kmp.git"
         }
     }
 }
