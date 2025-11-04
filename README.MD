@@ -390,5 +390,3 @@ Text("state=${'$'}{event.state} pos=${'$'}{event.positionMillis} / ${'$'}{event.
 
 ---
 
-## 라이선스
-
