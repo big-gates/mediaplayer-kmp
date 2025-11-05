@@ -2,6 +2,8 @@ package com.biggates.mediaplayer.player
 
 import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.readValue
+import kotlinx.cinterop.useContents
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import platform.AVFoundation.AVAssetDownloadDelegateProtocol
@@ -11,7 +13,6 @@ import platform.AVFoundation.AVURLAsset
 import platform.CoreMedia.CMTimeGetSeconds
 import platform.CoreMedia.CMTimeRange
 import platform.Foundation.NSData
-import platform.Foundation.NSDictionary
 import platform.Foundation.NSError
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSLog
@@ -72,14 +73,15 @@ internal object IosAssetDownloader {
             timeRangeExpectedToLoad: CValue<CMTimeRange>
         ) {
             // 전체로 기대되는 길이(초) 계산
-            val expectedSeconds: Double = CMTimeGetSeconds(timeRangeExpectedToLoad)
-                .let { if (it.isFinite() && it > 0.0) it else 0.0 }
+            val expectedSeconds: Double = timeRangeExpectedToLoad.useContents {
+                CMTimeGetSeconds(this.duration.readValue())
+            }.let { if (it.isFinite() && it > 0.0) it else 0.0 }
 
             // 지금까지 내려받은 전체 구간 길이(초) 합산
             var loadedSeconds: Double = 0.0
             for (element in totalTimeRangesLoaded) {
                 val range = element as? CMTimeRange ?: continue
-                val part = CMTimeGetSeconds(range.duration)
+                val part = CMTimeGetSeconds(range.duration.readValue())
                 if (part.isFinite() && part > 0.0) {
                     loadedSeconds += part
                 }
@@ -161,11 +163,11 @@ internal object IosAssetDownloader {
         }
 
         // 다운로드 작업 생성
-        val downloadTask: AVAssetDownloadTask = downloadSession.makeAssetDownloadTaskWithURLAsset(
+        val downloadTask: AVAssetDownloadTask = downloadSession.assetDownloadTaskWithURLAsset(
             URLAsset = asset,
             assetTitle = mediaItem.title ?: mediaItem.identifier,
             assetArtworkData = artworkData,
-            options = null as NSDictionary?
+            options = null,
         ) ?: throw IllegalStateException("다운로드 작업 생성 실패")
 
         taskToItemIdentifierMap[downloadTask] = mediaItem.identifier
@@ -195,11 +197,11 @@ internal object IosAssetDownloader {
         val url = NSURL.URLWithString(mediaItem.url) ?: throw IllegalArgumentException("잘못된 URL")
         val asset = AVURLAsset(uRL = url, options = null)
 
-        val downloadTask: AVAssetDownloadTask = downloadSession.makeAssetDownloadTaskWithURLAsset(
+        val downloadTask: AVAssetDownloadTask = downloadSession.assetDownloadTaskWithURLAsset(
             URLAsset = asset,
             assetTitle = mediaItem.title ?: mediaItem.identifier,
             assetArtworkData = null,
-            options = null as NSDictionary?
+            options = null,
         ) ?: throw IllegalStateException("다운로드 작업 생성 실패")
 
         taskToItemIdentifierMap[downloadTask] = mediaItem.identifier
