@@ -43,6 +43,7 @@ import platform.SystemConfiguration.kSCNetworkReachabilityFlagsReachable
 import platform.UIKit.UIDevice
 import platform.UIKit.UIView
 import platform.darwin.UInt32Var
+import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
 
 /**
@@ -124,6 +125,8 @@ actual class MediaPlayerController actual constructor() : MediaQueueController {
     private var currentIndex: Int = 0
     // 프리로드 정책(보관)
     private var preloadPolicy: PreloadPolicy = PreloadPolicy()
+    private var targetView: UIView? = null
+    private var playerLayer: AVPlayerLayer? = null
 
     private val _events = MutableStateFlow(PlayerEvent(PlaybackState.Idle, 0, 0, 0))
     actual val events = _events.asStateFlow()
@@ -167,6 +170,10 @@ actual class MediaPlayerController actual constructor() : MediaQueueController {
         val asset = AVURLAsset(uRL = nsUrl, options = null)
         val playerItem = AVPlayerItem(asset = asset)
         avPlayer = AVPlayer.playerWithPlayerItem(playerItem)
+
+        dispatch_async(dispatch_get_main_queue()) {
+            attachLayerIfPossible()
+        }
 
         // 0.5초 주기로 위치 업데이트
         periodicObserver = avPlayer?.addPeriodicTimeObserverForInterval(
@@ -217,15 +224,41 @@ actual class MediaPlayerController actual constructor() : MediaQueueController {
      *
      * @param containerView 비디오를 표시할 컨테이너 뷰
      */
-    fun attachTo(containerView: UIView) {
-        val playerInstance = avPlayer ?: return
-        // 기존 하위 레이어들 제거(중복 방지)
-        (containerView.layer.sublayers as? List<CALayer>)?.forEach { it.removeFromSuperlayer() }
+    fun attachTo(view: UIView) {
+        targetView = view
+        // 이미 레이어가 있으면 프레임만 갱신
+        playerLayer?.let { layer ->
+            layer.frame = view.bounds
+            if (layer.superlayer !== view.layer) {
+                (view.layer.sublayers as? List<CALayer>)?.forEach { it.removeFromSuperlayer() }
+                view.layer.addSublayer(layer)
+            }
+        }
+        // 아직 레이어가 없고 avPlayer가 있으면 생성해서 붙이기
+        if (playerLayer == null && avPlayer != null) {
+            attachLayerIfPossible()
+        }
+    }
 
-        val layer = AVPlayerLayer.playerLayerWithPlayer(playerInstance)
-        layer.frame = containerView.bounds
+    /** avPlayer 생성/교체 직후 호출해서 레이어를 붙여준다. */
+    private fun attachLayerIfPossible() {
+        val view = targetView ?: return
+        val player = avPlayer ?: return
+
+        // 기존 서브레이어 정리
+        (view.layer.sublayers as? List<CALayer>)?.forEach { it.removeFromSuperlayer() }
+
+        val layer = AVPlayerLayer.playerLayerWithPlayer(player)
         layer.videoGravity = AVLayerVideoGravityResizeAspect
-        containerView.layer.addSublayer(layer)
+        layer.frame = view.bounds
+        view.layer.addSublayer(layer)
+        playerLayer = layer
+    }
+
+    fun onLayoutChanged() {
+        targetView?.let { v ->
+            playerLayer?.frame = v.bounds
+        }
     }
 
     /** @param positionMillis 이동할 위치(밀리초) */

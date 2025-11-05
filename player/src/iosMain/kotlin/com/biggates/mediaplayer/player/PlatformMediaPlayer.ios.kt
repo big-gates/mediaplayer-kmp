@@ -1,12 +1,9 @@
-package com.biggates.mediaplayer
+package com.biggates.mediaplayer.player
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.UIKitView
-import com.biggates.mediaplayer.player.MediaItem
-import com.biggates.mediaplayer.player.MediaPlayerController
-import com.biggates.mediaplayer.player.OrchestratePlayback
 import platform.UIKit.UIView
 
 /**
@@ -38,6 +35,7 @@ actual fun PlatformMediaPlayer(
         },
         update = { view ->
             controller.attachTo(view)
+            controller.onLayoutChanged()
         }
     )
 
